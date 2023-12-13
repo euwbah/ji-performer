@@ -1,0 +1,17 @@
+[package]
+name = "ji-performer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+midly="0.5.3"
+midir="0.9.1"
+spin_sleep="1.1.1"
+prime-factor="0.4.5"
+rational = "1.5.0"
+primes = "0.3.0"
+lazy_static = "1.4.0"
+websocket = "0.27.0"
+broadcaster = "1.0.0"
+futures = "0.3.29"
+ctrlc = "3.4.1"
