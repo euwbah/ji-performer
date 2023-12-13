@@ -1,4 +1,6 @@
 //! Contains tuning data for Ondine (Gaspard de la Nuit, Ravel).
+//!
+//! Page number & score references are with respect to the EDITION PETERS publication.
 
 use std::sync::{Arc, Mutex};
 
@@ -551,6 +553,246 @@ lazy_static! {
             P, P, P, e,
             e_s, f_s, f_x, P,
             a, a_s, P, c,
+        ]));
+
+        /*
+        This tuning settles bars 23-25:
+
+# bar 23
+{r220hz}
+{r5/4}
+{r3/2}
+(1)
+# D#  G#   A#   C#         E#           Fx    A#
+[3/4, 1/1, 9/8, 5415/4096, 55233/32768, 15/8, 9/4]---
+# G     A          C#         E          F#     A
+[15/16, 1083/1024, 5415/4096, 3249/2048, 57/32, 1083/512]
+# Bb  C            G     E          A         C
+[9/8, 20577/16384, 15/8, 3249/2048, 1083/512, 20577/8192]
+
+# bar 24
+# D#  G#   A#   C#         E#           Fx    A#
+[3/4, 1/1, 9/8, 5415/4096, 55233/32768, 15/8, 9/4]--
+[3/4, 1/1, 9/8, 5415/4096, 55233/32768, 15/8, 9/4]
+# G     A          C#         E          F#     A
+[15/16, 1083/1024, 5415/4096, 3249/2048, 57/32, 1083/512]
+# Bb  C            G     E          A         C#
+[9/8, 20577/16384, 15/8, 3249/2048, 1083/512, 5415/2048]
+
+# bar 25
+[3/4, 1/1, 9/8, 5415/4096, 55233/32768, 15/8, 9/4]--
+[3/4, 1/1, 9/8, 5415/4096, 55233/32768, 15/8, 9/4]-
+[3/4, 1/1, 9/8, 5415/4096, 15/8, 55233/16384, 9/4, 55233/8192]
+         */
+
+        // Notice that bar 25 no longer uses the diminished stack, letting the sonority of
+        // F# reset in time for bar 26.
+
+        // Bar 26: B#m11b5 (the 11 = E# = 55233/32768 for continuity)
+        // In moving from D#9sus4(add10),
+
+        // We can use a sweeter F# for the half dimished sound. Instead of constructing
+        // B#m11b5 as upper notes of a G# (dominant) fundamental, we know that it is not
+        // because the melody has a suspension (E#) that strongly suggests the D#m6 essence
+        // over the G#7 essence.
+
+        // We carry over the important A# anchor note's tuning from the previous,
+        // which we recall is now tuned at 27/16 from the original 1/1 root of the beginning of the piece.
+
+        // We take F# to be the 5-limit major third below A# (4/5)
+        let f_s = a_s * r(4, 5);
+        // the fundamental root should still technically be G#, (even though using D#m6) sonority,
+        // so use 5/4 of G# for B# to keep consistent. This is a 9/5 m7th away from A#,
+        // B#-F# forms a 36/25 tritone (interval between a 3-limit major 2nd and two 5-limit maj 3rds)
+        // creates a very pure augmented sonority within the half dim itself, consisentent with how
+        // Ravel explores relationships between Z/3Z and Z/4Z.
+        let b_s = g_s * r(5, 4);
+        let c_s = g_s * r(2, 3); // reset C#-G# P5 in case, even though we're not using it.
+
+        // Premptive note: If we don't un-pump this F#, by bar 30, we will have pumped up
+        // by a syntonnic comma, but since the next section is in G#, and G# has been our
+        // harmonic fundamental that we've been building off of all this while
+
+        t.push(td(26.0, 4, r(5, 4), [
+            c_s, P, P, P,
+            P, f_s, P, P,
+            P, P, P, b_s,
+        ]));
+
+        // Bar 27: E#9
+
+        // This chord may look out of place initially, until we see that bar 26 is has subdominant
+        // function in a Sub-Dom-Tonic cadence, A#m11b5 is the 'ii', so E#9 is the V7.
+
+        // The last two chords of bar 26 has no E#, so we can safely revert E# to 5-limit tunings:
+        // E# is just a 2/3 fifth below B#, and since B# was tuned as 5/4 of G#, this means
+        // E# = 5/4 of original C# root.
+        let e_s = b_s * r(2, 3);
+        assert!(e_s == r(5, 4), "Math not mathing");
+        let g_x = e_s * r(5, 4); // Gx = 5-limit maj third of root E#
+        let f_x = e_s * r(9, 8); // diatonic 2nd
+
+        t.push(td(27.0, 4, r(5, 4), [
+            P, P, P, P,
+            e_s, P, f_x, P,
+            g_x, P, P, P,
+        ]));
+
+        // Bar 27:4.5: E#7b9
+
+        // Again looks weird on the score, but it's just E#7b9 (F# is enharmonic b9 of E#)
+
+        // since there is no F# any time soon, we are free to tune the b9 however we want.
+        // bars 28-29 are rich, so go for rich sounds.
+
+        let f_s = e_s * r(17, 16); // 17th harmonic of E#
+        t.push(td(27.45, 4, r(5, 4), [
+            P, P, P, P,
+            P, f_s, P, P,
+            P, P, P, P,
+        ]));
+
+        // Bar 28: A#9#11(no3)
+        // This chord reinforces the augmented symmetry theme of E+ = G#+ = B#+ as
+        // a structure over A#, however, it is a shell chord and it's not possible to
+        // identify the 'root' using notes in this bar alone.
+        //
+        // The obvious answer would be to assume that the previous E# is the V-dominant of this
+        // A#'s Tonic, which would be nice. Looking forward though, m. 29 uses B as the dominant
+        // of G# (m. 30), which highlights the use of augmented symmetry that B ~ D# ~ G
+        // (hinting at the climax at m. 66) such that B ~ D# -> G# (V-I cadence by means of Z/3Z).
+
+        // ~ means 'symmetrically equivalent to'
+        // -> means 'resolves to'
+
+        // By transitivity of the operators: Caug/A# ~ Caug/F# ~ F#7#11 -> B ~ D# -> G#
+        //
+        // This A#9#11 chord is in fact fundamentally rooted as F#, and A# is
+        // the primodal-under-5 'false root'.
+
+        // Recall that the JI structure 11:14:18 is a non-octave symmetry in 31edo that tempers the
+        // mothwellsma (99/98), that is, 11:14, and 14:18 evenly splits 11:18 into two equal
+        // parts. In JI, this comma is about 17.5c, so it is noticeable, but we can still use
+        // this idea to color bar 28 with a superaugmented sound (stacking super thirds)
+
+        // In order to preserve the tuning of G# (new key in m. 30) without pumping any commas
+        // we let the middle of the mothwellsmic triad, the 14th harmonic, be G# itself, and let
+        // E and B# be 11 and 18 respectively.
+
+        // In doing this, we can justify having both F# and A# as possible
+        // fundamental roots for this bar, and by pretending we "tempered" the mothwellsma
+        // we can use Ravel's A# bass functionally as the fundamental JI root, while still
+        // maintaining the tuning for G#.
+
+        // This is a very bizzare sound, but it doesn't stray from the original effect of m. 28
+        // in 12edo.
+
+        let b_s = g_s * r(9, 7); // B# = 18th harmonic of A#
+        let a_s = g_s * r(8, 7); // G# corresponds to 7th harmonic of A#, so A# = 8/7 w.r.t G#
+        let e = g_s * r(11, 14); // E = 11th harmonic of A#
+
+        t.push(td(28.0, 4, r(5, 4), [
+            P, P, P, e,
+            P, P, P, P,
+            P, a_s, P, b_s,
+        ]));
+
+        // Bar 29: B9sus4, B9, B13b9
+
+        // There's only one obvious option for this bar, notice that Ravel does not write
+        // C# and G# in the same chord, which (coincidentally?) prevents needing to choose between
+        // with wolf 5ths between C#-G#, or wolf 4ths between D#-G#.
+        //
+        // The D# is persistent, so we set G# as our new root 1/1 (which is still unaltered
+        // from the beginning), set B as the 6/5 of G#, B-F#-C# is a P5 (3/2) chain,
+        // D# is tuned as the 5/4 of B, which makes it also the 3/4 of G#
+
+
+        let b = g_s * r(6, 5); // Tune B w.r.t anchor note G# as 6/5
+
+        // chain of fifths: B-F#-C#
+        let f_s = b * r(3, 4);
+        let c_s = f_s * r(3, 4);
+
+        // The C for the 13b9 chord can be set to a whole bunch of values,
+        // as m. 30 has a clash between B and B#, so either ways
+        // it's probably not important to maintain any particular pitch of C.
+
+        let c = b * r(19, 18);
+        // alternative options to try:
+        // let c = g_s * r(5, 4);
+        // let c = g_s * r(32, 25);
+
+        let a = b * r(7, 8); // the 7th harmonic here gives a nice ring
+
+        // even though there isn't an E in this bar, it could be added to the first chord
+        // (not following the score as written) to give more septimal color by building it
+        // off the septimal A.
+        let e = a * r(3, 4);
+
+        assert!(d_s == g_s * r(3, 4)); // just checking
+
+        t.push(td(29.0, 4, r(5, 4), [
+            c_s, P, P, e,
+            P, f_s, P, P,
+            a, P, b, c,
+        ]));
+
+        /*
+
+# bar 26
+# B#  F#    A#   E#           F#   A#   E#
+[5/8, 9/10, 9/8, 55233/32768, 9/5, 9/4, 55233/16384]-
+# B#  F#    A#   D#   A#   D#
+[5/8, 9/10, 9/8, 3/2, 9/4, 3/1]-
+# B#
+[5/16, 9/20, 9/16, 9/8, 3/2, 9/5, 9/4]-
+
+# bar 27
+# E#   B#    Gx     Fx     D#   Fx
+[5/24, 5/16, 25/48, 15/16, 3/2, 15/8]---
+[5/24, 5/16, 25/48, 15/16, 3/2, 15/8]-
+# E#   B#    Gx     F#    D#   F#   Gx
+[5/24, 5/16, 25/48, 85/96, 3/2, 85/48, 25/12]-
+
+(bpm:90)
+# bar 28
+# A#   G#   E      B#   E     B#
+[4/14, 1/2, 11/14, 9/7, 11/7, 18/7]
+[4/14, 1/2, 11/14, 1/1, 11/7, 16/7]-
+[4/14, 1/2, 11/14, 11/7, 2/1]
+
+(bpm:80)
+# bar 29
+# B    F#    A      C#     A      C#
+[3/10, 9/20, 21/40, 27/40, 21/20, 27/20]
+#                          D#   F#
+[3/10, 9/20, 21/40, 27/40, 3/4, 9/10]-
+#                   C      D#   G#
+[3/10, 9/20, 21/40, 19/30, 3/4, 1/1]
+*/
+
+        // -----------------------------------
+        // PAGE 4
+
+        // Bar 30: G# harmonic, with added m3 clash
+
+        // Start on a clean slate, using whatever the last tuning of G# was
+
+        let a_s = g_s * r(9, 8); // 9th harm
+        let b_s = g_s * r(5, 4); // 10th
+        let d_s = g_s * r(3, 4); // 12th
+        let e = g_s * r(13, 16); // 13th
+        let f_s = g_s * r(7, 8); // 7th
+
+        // Update these just in case
+        let c_s = g_s * r(2, 3); // 4/3 P4 of G#
+        let e_s = g_s * r(5, 6); // 5/3 Maj6
+
+        t.push(td(30.0, 4, r(5, 4), [
+            c_s, P, d_s, e,
+            e_s, f_s, P, g_s,
+            a_s, P, P, b_s,
         ]));
 
 
