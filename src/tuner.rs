@@ -14,7 +14,7 @@ use rational::Rational;
 
 use crate::PB_RANGE;
 
-static SEMITONE_NAMES: [&str; 12] = [
+pub static SEMITONE_NAMES: [&str; 12] = [
     "A", "Bb", "B", "C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#",
 ];
 
@@ -272,7 +272,7 @@ pub fn td(time: f64, root: u8, offset: Rational, tuning: [Rational; 12]) -> Tuni
 
 pub struct Tuner {
     /// The current index in the `tunings` list that we're at.
-    curr_tuning_idx: usize,
+    curr_tuning_idx: isize,
 
     /// List of tunings to be applied at given times.
     /// This must be sorted by increasing time.
@@ -305,7 +305,7 @@ impl Tuner {
         }
 
         Tuner {
-            curr_tuning_idx: 0,
+            curr_tuning_idx: -1,
             tunings: sorted_tunings,
         }
     }
@@ -314,18 +314,28 @@ impl Tuner {
     ///
     /// Returns the new [`TuningData`] to be applied, otherwise, returns [`None`].
     pub fn update(&mut self, time: f64) -> Option<&TuningData> {
-        if self.curr_tuning_idx == self.tunings.len() - 1 {
+        if self.curr_tuning_idx == -1 {
+            // First tuning, apply when the first tuning time is reached.
+            if time >= self.tunings[0].time {
+                self.curr_tuning_idx += 1;
+                return Some(&self.tunings[0]);
+            }
+        }
+
+        let curr_t_idx = self.curr_tuning_idx as usize;
+
+        if curr_t_idx == self.tunings.len() - 1 {
             // Last tuning, no more tunings to apply.
             return None;
         }
 
-        if time < self.tunings[self.curr_tuning_idx].time {
+        if time < self.tunings[curr_t_idx].time {
             panic!("Time went backwards! Make sure tunings are sorted by increasing time.");
         }
 
-        if time >= self.tunings[self.curr_tuning_idx + 1].time {
+        if time >= self.tunings[curr_t_idx + 1].time {
             self.curr_tuning_idx += 1;
-            return Some(&self.tunings[self.curr_tuning_idx]);
+            return Some(&self.tunings[curr_t_idx + 1]);
         }
 
         None

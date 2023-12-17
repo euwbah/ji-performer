@@ -1,20 +1,18 @@
 use broadcaster::BroadcastChannel;
 use futures::executor;
-use midir::{MidiOutput, MidiOutputConnection};
+use midir::{MidiOutput};
 use midly::live::LiveEvent;
 use midly::num::{u4, u7};
 use midly::{self, MetaMessage, MidiMessage, PitchBend, Smf, TrackEventKind};
 use rational::Rational;
-use spin_sleep::{SpinSleeper, SpinStrategy};
 use std::fs;
 use std::io::stdin;
 use std::process::exit;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
-use websocket::sync::Server;
 
 use crate::server::{start_websocket_server, VisualizerMessage};
-use crate::tuner::{JIRatio, Monzo, PRIMES};
+use crate::tuner::{JIRatio, Monzo, PRIMES, SEMITONE_NAMES};
 
 #[macro_use]
 extern crate lazy_static;
@@ -30,12 +28,14 @@ pub const PB_RANGE: u16 = 4;
 ///
 /// Other meta messages (non note/cc) like tempo change, track name, etc. will still be
 /// parsed, but notes will not be played and no waiting will be done until this time is reached.
-const START_FROM: f64 = 0.0;
+const START_FROM: f64 = 227.0;
 
-const MIDI_FILE: &str = "test.mid";
+const MIDI_FILE: &str = "ondine.mid";
 
 /// Playback speed multiplier. 1.0 is normal speed.
-const PLAYBACK_SPEED: f64 = 0.95;
+const PLAYBACK_SPEED: f64 = 0.9;
+
+const MIDI_PLAYBACK_DEVICE_NAME: &str = "31edo";
 
 fn main() {
     println!("JI Performer v0.1");
@@ -52,16 +52,25 @@ fn main() {
     println!("Select a MIDI output port:");
     let midi_out = MidiOutput::new("JI Performer").unwrap();
 
+    let mut midi_idx = None;
+
     for (idx, port) in midi_out.ports().iter().enumerate() {
         let port_name = midi_out.port_name(port).unwrap();
-        println!("[{idx}] {port_name}");
+        if port_name.contains(MIDI_PLAYBACK_DEVICE_NAME) {
+            midi_idx = Some(idx);
+            println!("[{idx}] {port_name} <Device Found>");
+        } else {
+            println!("[{idx}] {port_name}");
+        }
     }
 
-    let mut input = String::new();
-    stdin().read_line(&mut input).unwrap();
-    let num_input: usize = input.trim().parse().unwrap();
+    if let None = midi_idx {
+        let mut input = String::new();
+        stdin().read_line(&mut input).unwrap();
+        midi_idx = Some(input.trim().parse().unwrap());
+    }
 
-    let out_port = &midi_out.ports()[num_input];
+    let out_port = &midi_out.ports()[midi_idx.unwrap()];
     let mut midi_conn =
         midi_out.connect(out_port, "JI Performer").unwrap();
 
@@ -152,7 +161,7 @@ fn main() {
 
     // MAIN PLAYBACK LOOP
 
-    for event in track.iter().take(500) {
+    for event in track.iter() {
         let delta = event.delta.as_int(); // how many midi ticks after the previous event should this event occur.
         curr_tick += delta;
         let delta_crochets = (delta as f64) / (ppqn as f64); // delta in terms of quarter notes
@@ -212,13 +221,40 @@ fn main() {
             }
 
             print!("[{curr_tick:>7}, {expected_curr_time:7.3}s] ");
-            println!("Tuning: {:?}", curr_tuning);
+            println!(
+                "Tuning:\n
+                A:  ({:.3}c) {}
+                Bb: ({:.3}c) {}
+                B:  ({:.3}c) {}
+                C:  ({:.3}c) {}
+                C#: ({:.3}c) {}
+                D:  ({:.3}c) {}
+                D#: ({:.3}c) {}
+                E:  ({:.3}c) {}
+                F:  ({:.3}c) {}
+                F#: ({:.3}c) {}
+                G:  ({:.3}c) {}
+                G#: ({:.3}c) {}
+                ",
+                curr_tuning[0].cents().unwrap(), curr_tuning[0],
+                curr_tuning[1].cents().unwrap() - 100.0, curr_tuning[1],
+                curr_tuning[2].cents().unwrap() - 200.0, curr_tuning[2],
+                curr_tuning[3].cents().unwrap() - 300.0, curr_tuning[3],
+                curr_tuning[4].cents().unwrap() - 400.0, curr_tuning[4],
+                curr_tuning[5].cents().unwrap() - 500.0, curr_tuning[5],
+                curr_tuning[6].cents().unwrap() - 600.0, curr_tuning[6],
+                curr_tuning[7].cents().unwrap() - 700.0, curr_tuning[7],
+                curr_tuning[8].cents().unwrap() - 800.0, curr_tuning[8],
+                curr_tuning[9].cents().unwrap() - 900.0, curr_tuning[9],
+                curr_tuning[10].cents().unwrap() - 1000.0, curr_tuning[10],
+                curr_tuning[11].cents().unwrap() - 1100.0, curr_tuning[11],
+            );
         }
 
         let is_midi_event = matches!(event.kind, TrackEventKind::Midi { .. });
 
         if (is_midi_event && start.is_some()) || !is_midi_event {
-            print!("[{curr_tick:>7}, {expected_curr_time:7.3}s] ");
+            // print!("[{curr_tick:>7}, {expected_curr_time:7.3}s] ");
         }
 
         match event.kind {
@@ -240,7 +276,7 @@ fn main() {
             } => {
                 if start.is_some() {
                     // Only send Note on/off messages if we have reached where we want to start playing.
-                    println!("MIDI Event: Channel: {}, Message: {:?}", channel, message);
+                    // println!("MIDI Event: Channel: {}, Message: {:?}", channel, message);
 
                     if let MidiMessage::NoteOn { key, vel } = message {
                         // FUTURE REMINDER: a NoteOn with 0 velocity is equivalent to a NoteOff, and should
@@ -264,11 +300,17 @@ fn main() {
                             monzo[0] += octaves_from_a4;
                         }
 
+                        print!("[{curr_tick:>7}, {expected_curr_time:7.3}s] ");
+                        let note_name = SEMITONE_NAMES[(key.as_int() as usize + 3) % 12];
+                        let octaves = (key.as_int() as i32 / 12) - 1;
+                        println!("Note on: {}{}, vel: {vel}", note_name, octaves);
+
                         let res = executor::block_on(broadcast_channel.send(&VisualizerMessage::NoteOn {
                             edosteps_from_a4,
                             velocity: vel,
                             monzo,
                         }));
+
                         if let Err(e) = res {
                             println!("WARN: Failed to send message to visualizer broadcast channel: {}", e);
                         }
