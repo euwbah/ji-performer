@@ -28,7 +28,7 @@ pub const PB_RANGE: u16 = 4;
 ///
 /// Other meta messages (non note/cc) like tempo change, track name, etc. will still be
 /// parsed, but notes will not be played and no waiting will be done until this time is reached.
-const START_FROM: f64 = 200.0;
+const START_FROM: f64 = 70.0;
 
 const MIDI_FILE: &str = "ondine.mid";
 

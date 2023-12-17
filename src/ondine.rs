@@ -2162,8 +2162,9 @@ lazy_static! {
 
         // we need to temper the A# closer toward 11/12 of B so that bar 68 is not jarring.
         // The original ratio between A# and B is 16/15, but m. 68 fixes 12/11 for A#-B.
-        // med(16/15, 12/11) = 14/13
-        let temp_a_s = b * r(13, 14);
+        // med(16/15, 12/11) = 14/13 (still to jarring of a change)
+        // med(16/15, 14/13) = 15/14
+        let temp_a_s = b * r(14, 15);
 
         t.push(td(238.76, 4, r(5, 4), [
             P, P, d_s, e,
@@ -2179,7 +2180,7 @@ lazy_static! {
         let d = b * r(7, 12);
         let e = b * r(2, 3);
         let g_s = b * r(5, 6);
-        let a_s = b * r(12, 13); // goal: A#-B = 12/11, but temper for now.
+        let a_s = b * r(13, 14); // goal: A#-B = 12/11, but temper for now.
 
         t.push(td(240.29, 4, r(5, 4), [
             c_s, d, P, e,
@@ -2206,16 +2207,19 @@ lazy_static! {
         // is the typical cantizans 7-1 resolution we can do in 5-limit.
 
         /*
-        Et comme je lui repondais que j'aimais une mortelle,
+        Et comme je lui repondais que j'aimais une mortelle (mm. 72-79)
          */
 
         let a = g_s * r(16, 15);
         let c = a * r(6, 5); // this is the root we are building off of.
+
+        // println!("C: {c}");
+
         // FYI, after all the ridiculous comma pumps, we are at
-        // C = 109631931154432/58625675076375
+        // C = 109631931154432/58625675076375 above the initial C#
         //   = (2^20 * 37 * 41^4) / (3^6 * 5^3 * 11^2 * 19 * 23^4)
         // This note is equal to -116.3c below starting C#, so we aren't far off.
-        // println!("C: {c}");
+
         let d = c * r(9, 16);
         let e = c * r(5, 8);
         let f = c * r(11, 16);
@@ -2226,6 +2230,119 @@ lazy_static! {
             P, d, P, e,
             f, P, g, P,
             a, P, b, c,
+        ]));
+
+        // Bar 74: F# maj pentatonic.
+
+        // This part should sound very human, grounding, non-mystical and familiar.
+        //
+        // Use a 12-NEJI under /54 rooted at B = 54/54 for a relatively plain, familiar 12edo sound.
+        // Use B as root since key is B (though the tonal center leans closer towards F#)
+        //
+        // also, reset C# to the starting pitch to 'reset' the hallucination
+
+        let b = r(54, 61);        // 54/54  0.0c
+        let c = b * r(57, 54);    // 57/54  93.6c
+        let c_s = r(1, 1);        // 61/54  211.0c
+        let d = b * r(64, 54);    // 64/54  294.1c
+        let d_s = b * r(68, 54);  // 68/54  399.0c
+        let e = b * r(72, 54);    // 72/54  498.0c
+        let f = b * r(76, 54);    // 76/54  591.6c
+        let f_s = b * r(81, 54);  // 81/54  701.9c
+        let g = b * r(86, 54);    // 86/54  805.6c
+        let g_s = b * r(91, 54);  // 91/54  903.4c
+        let a = b * r(96, 54);    // 96/54  996.1c
+        let a_s = b * r(102, 54); // 102/54 1101.0c
+
+        // B and C have to be listed in the octave above C#
+        let b = b * 2;
+        let c = c * 2;
+
+        t.push(td(271.7, 4, r(5, 4), [
+            c_s, d, d_s, e,
+            f, f_s, g, g_s,
+            a, a_s, b, c,
+        ]));
+
+        // ------------------------------------------------------------
+        // PAGE 11
+
+        // Bar 79: D#!9
+
+        /*
+        ... boudeuse et depitee, elle pleura quelques larmes,
+         */
+
+        // Going back to the Ondine character, using otonal stuff again
+        // build off D# from the NEJI. (D# = 68/61 from 1/1 C# = 188.1c)
+
+        let f = d_s * r(9, 8);
+        let g = d_s * r(5, 4);
+        let a_s = d_s * r(3, 2);
+        let c_s = d_s * r(7, 8);
+
+        let g_s = d_s * r(4, 3); // pre-tune G# as 4/3 of D# so the detune effect is not so bad.
+        let b = g_s * r(7, 6); // pretude B: septimal m3 also
+
+        t.push(td(292.06, 4, r(5, 4), [
+            c_s, P, P, P,
+            f, P, g, g_s,
+            P, a_s, b, P,
+        ]));
+
+        // Bar 80: G#m9(13)
+
+        // reintroduce 13/8 and septimal min third
+        // use G# = 4/3 of D# as new chord root.
+        assert!(a_s == g_s * r(9, 8)); // A# maintains 9/8 of G#
+        let e_s = g_s * r(13, 16); // E#: nat 6 becomes 13th harmonic.
+        let f_s = g_s * r(7, 8); // F#: also septimal, P5 from B.
+
+        // the detuning of F to E# is quite drastically noticeable...
+        // pretune the unused notes G# and B in the previous tuning, then
+        // hold off the tuning of E# until just before it happens.
+
+        // Delay the tuning for B#, D and E to hold off messing up previously sustained notes.
+        t.push(td(297.5, 4, r(5, 4), [
+            P, P, P, P,
+            e_s, f_s, P, P,
+            P, P, P, P,
+        ]));
+
+        // Bar 80:4: G#7(b5,#5,#9)
+
+        // The LH can form a G#!7 4:5:7 shell
+        let b_s = g_s * r(5, 4); // B#: 5/4 simple maj 3
+
+        // Idea: let G#-B-D-E be stack of septimal min. thirds (which in 31 edo, tempers out to aug 5th)
+        let d = b * r(7, 12); // D: stack 7/6 from B
+        let e = d * r(7, 6); // E: stack 7/6 from D
+
+        t.push(td(300.8, 4, r(5, 4), [
+            P, d, P, e,
+            e_s, f_s, P, P,
+            P, P, b, b_s,
+        ]));
+
+        // this settles the tuning until m. 83
+
+        // Bar 83: Dm6
+
+        // Is using the very flat double septimal minor D a good idea?
+        // FUTURE NOTE: no it is not.
+
+        // Instead, use B as the anchor, and D is 3/5 of B.
+        let d = b * r(3, 5);
+        let f = d * r(7, 6); // same tuning as E previously
+        let a = d * r(3, 2);
+        let c_s = d * r(11, 12);
+
+        // for the accented G#, use the same tuning as the in bar 80.
+
+        t.push(td(314.4, 4, r(5, 4), [
+            c_s, d, P, P,
+            f, P, P, P,
+            a, P, P, P,
         ]));
 
         Arc::new(Mutex::new(Tuner::new(t)))

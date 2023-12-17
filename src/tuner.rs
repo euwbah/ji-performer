@@ -18,6 +18,10 @@ pub static SEMITONE_NAMES: [&str; 12] = [
     "A", "Bb", "B", "C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#",
 ];
 
+/// Whether to use octave reduced monzos.
+/// E.g., 5/4 will simply be [0, 0, 1> instead of [-2, 0, 1>.
+const USE_OCT_RED_MONZOS: bool = true;
+
 lazy_static! {
     /// Mapping of prime numbers to their index in the list of primes.
     /// 2 -> 0
@@ -29,6 +33,20 @@ lazy_static! {
     pub static ref PRIMES: HashMap<u32, usize> = {
         let mut pset = Sieve::new();
         pset.iter().take(1000).enumerate().map(|(i, p)| (p as u32, i as usize)).collect()
+    };
+
+    /// Mapping of primes to their octaves.
+    ///
+    /// 2 -> 1
+    /// 3 -> 2
+    /// 5 -> 3
+    /// 7 -> 3
+    /// 11 -> 4
+    /// etc...
+    ///
+    /// Keys are not sorted.
+    pub static ref PRIMES_OCTAVES: HashMap<u32, i32> = {
+        PRIMES.keys().map(|p| (*p, (*p as f64).log2().floor() as i32)).collect()
     };
 }
 
@@ -51,6 +69,8 @@ impl JIRatio for Rational {
         }
 
         let mut monzo: Vec<i32> = Vec::new();
+        monzo.push(0); // init monzo with at least the powers of 2.
+
         let num: u128 = self
             .numerator()
             .try_into()
@@ -61,6 +81,9 @@ impl JIRatio for Rational {
             .expect("No negative fractions allowed");
 
         let num_factors = PrimeFactors::from(num);
+
+        // For octave reduced monzos compensation.
+        let mut oct_offset = 0;
 
         for fac in num_factors.iter() {
             let p = fac.integer;
@@ -74,6 +97,11 @@ impl JIRatio for Rational {
             }
 
             monzo[p_idx] += exp as i32;
+
+            if USE_OCT_RED_MONZOS && p != 2 {
+                let prime_octs = *PRIMES_OCTAVES.get(&(p as u32)).expect("Prime not found in PRIMES_OCTAVES map");
+                oct_offset += prime_octs * exp as i32;
+            }
         }
 
         let den_factors = PrimeFactors::from(den);
@@ -90,7 +118,14 @@ impl JIRatio for Rational {
             }
 
             monzo[p_idx] -= exp as i32;
+
+            if USE_OCT_RED_MONZOS && p != 2 {
+                let prime_octs = *PRIMES_OCTAVES.get(&(p as u32)).expect("Prime not found in PRIMES_OCTAVES map");
+                oct_offset -= prime_octs * exp as i32;
+            }
         }
+
+        monzo[0] += oct_offset;
 
         Some(monzo)
     }
