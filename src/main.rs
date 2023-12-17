@@ -28,12 +28,12 @@ pub const PB_RANGE: u16 = 4;
 ///
 /// Other meta messages (non note/cc) like tempo change, track name, etc. will still be
 /// parsed, but notes will not be played and no waiting will be done until this time is reached.
-const START_FROM: f64 = 70.0;
+const START_FROM: f64 = 1.0;
 
 const MIDI_FILE: &str = "ondine.mid";
 
 /// Playback speed multiplier. 1.0 is normal speed.
-const PLAYBACK_SPEED: f64 = 1.0;
+const PLAYBACK_SPEED: f64 = 0.2;
 
 const MIDI_PLAYBACK_DEVICE_NAME: &str = "31edo";
 
@@ -153,6 +153,7 @@ fn main() {
 
     // Contains current tuning as monzos. Necessary to memoize monzo() calls to prevent repeated
     // prime decomposition at the speed of light.
+    // The first element is for A, second Bb, etc...
     let mut curr_monzos: [Monzo; 12] = curr_tuning.map(|x| x.monzo().unwrap());
 
     // println!("Using default monzos: {:?}", monzos); should be array of 12 empty arrays, since 1/1 has no prime factors.
@@ -289,7 +290,10 @@ fn main() {
 
                         send_note_on(&mut midi_conn, channel, key, vel);
 
-                        let mut monzo = curr_monzos[key.as_int() as usize % 12].clone();
+                        // 0 is A, 1 is Bb, etc...
+                        let semitone_mod12 = (key.as_int() + 3) as usize % 12;
+
+                        let mut monzo = curr_monzos[semitone_mod12].clone();
 
                         // Monzos are relative to A4, so we need to shift the octave to match
                         let octaves_from_a4 = edosteps_from_a4.div_euclid(12);
@@ -301,9 +305,9 @@ fn main() {
                         }
 
                         print!("[{curr_tick:>7}, {expected_curr_time:7.3}s] ");
-                        let note_name = SEMITONE_NAMES[(key.as_int() as usize + 3) % 12];
+                        let note_name = SEMITONE_NAMES[semitone_mod12];
                         let octaves = (key.as_int() as i32 / 12) - 1;
-                        println!("Note on: {}{}, vel: {vel}", note_name, octaves);
+                        println!("Note on: {}{}, vel: {vel}. {:?}", note_name, octaves, monzo);
 
                         let res = executor::block_on(broadcast_channel.send(&VisualizerMessage::NoteOn {
                             edosteps_from_a4,
