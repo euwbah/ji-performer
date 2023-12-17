@@ -1948,6 +1948,11 @@ lazy_static! {
 
         // BAR 66: GIANT STEPS (this bar was 90% of the reason of why I wanted to do this whole thing.)
 
+        /*
+        Sa chanson murmuree, elle me supplia de recevoir son anneau a mon doigt, pour etre l'epoux d'une Ondine,
+        et de visiter avec elle son palais, pour etre le roi des lacs.
+         */
+
         // Chords: B-9 D9(13) | G-9 Bb9(13) | D#-9 - | F#13sus F#7b9
 
         /*
@@ -1981,10 +1986,39 @@ lazy_static! {
         shifted -210.5c on top of the -39.0c (plus a bit left over from the 9/8 relation of B-C#).
          */
 
+        /*
+        Attempt 2.
+        The subminor thirds have shifted the comma wayyy too far, which completely messes up the melody.
+
+        Instead of 7/6 thirds, let's try a high prime limit third that is close to exactly 300c, but
+        preferably still slightly flatter, so that the descending feeling is still there.
+
+        med(7/6, 6/5) = 13/11 = 289.2c
+        med(13/11, 6/5) = 19/16 = 297.5c
+        med(19/16, 6/5) = 25/21 = 301.8c
+        med(25/21, 19/16) = 44/37 = 299.97c (too close to 300)
+        med(44/37, 19/16) = 63/53 = 299.2c
+        med(63/53, 19/16) = 82/69 = 298.8c
+         */
+
+        // adjust m3 size for the upward m3 bass movement and m3 interval of minor tonic chords.
+        let b66_m3_size = r(82, 69);
+
+        // adjust nat 6 size for the melody over the dom7(13) chords
+        // (the ideal 13/8 is too astringent, losing the symmetry of the downward descending melody)
+        //
+        // To match 12edo commas exactly, the nat6_size should be a tempered P5 plus X,
+        // where 2X is the interval spanned by going up a just 3/2 fifth and down one b66_m3_size.
+        // If b66_m3_size is 82/69, then 2X = 207/164, and X ~ 46/41.
+        //
+        // med(184/164, 13/12) = 59/52.
+        // 3/2 * 59/52 = 177/104 = 920.5c, quite a fair compromise
+        let b66_nat6_size = r(177, 104);
+
         // B-9
         // Anchor C# as 9/8 of B, set B to new root:
         let b = c_s * r(16, 9);
-        let d = b * r(7, 12);
+        let d = b * b66_m3_size * r(1, 2);
         let f_s = b * r(3, 4);
 
         t.push(td(228.1, 4, r(5, 4), [
@@ -1993,8 +2027,8 @@ lazy_static! {
             P, P, b, P,
         ]));
 
-        // D7(13)
-        let b = d * r(13, 8);
+        // D7(13) (anchor D)
+        let b = d * b66_nat6_size;
         let f_s = d * r(5, 4);
         let c = d * r(7, 4);
         let e = d * r(9, 8);
@@ -2004,9 +2038,9 @@ lazy_static! {
             P, P, b, c,
         ]));
 
-        // G-9
+        // G-9 (anchor D)
         let g = d * r(4, 3);
-        let b_b = g * r(7, 6);
+        let b_b = g * b66_m3_size;
         let a = g * r(9, 8);
 
         t.push(td(230.2, 4, r(5, 4), [
@@ -2015,7 +2049,184 @@ lazy_static! {
             a, b_b, P, P,
         ]));
 
-        // Bb7(13)
+        // Bb7(13) (anchor Bb)
+        let a_b = b_b * r(7, 8);
+        let d = b_b * r(5, 8);
+        let f = b_b * r(3, 4);
+        let g = b_b * b66_nat6_size * r(1, 2);
+
+        t.push(td(230.95, 4, r(5, 4), [
+            P, d, P, P,
+            f, P, g, a_b,
+            P, P, P, P
+        ]));
+
+        // Eb-9 (anchor Bb)
+        let e_b = b_b * r(2, 3);
+        let g_b = e_b * b66_m3_size;
+        let f = e_b * r(9, 8);
+
+        // in case of accidental wrong notes
+        let a_b = e_b * r(4, 3);
+        let d_b = g_b * r(3, 4);
+
+        t.push(td(231.69, 4, r(5, 4), [
+            d_b, P, e_b, P,
+            f, g_b, P, a_b,
+            P, P, P, P,
+        ]));
+
+        // F#13sus (anchor A# = Bb) and F#7b9
+        let a_s = b_b;
+        let f_s = a_s * r(4, 5);
+        let e = f_s * r(7, 8);
+        let g_s = f_s * r(9, 8);
+        let d_s = f_s * b66_nat6_size * r(1, 2); // TODO: for melody's sake, should this be 13th harm or 27/16?
+        let g = f_s * r(17, 16); // TODO: is this the correct color for the b9?
+
+        t.push(td(233.05, 4, r(5, 4), [
+            P, P, d_s, e,
+            P, f_s, g, g_s,
+            P, a_s, P, P,
+        ]));
+
+        // Bar 67: SECOND CYCLE
+
+        // B-9 (anchor F#)
+        let b = f_s * r(4, 3);
+        let d = b * b66_m3_size * r(1, 2);
+        let f_s = b * r(3, 4);
+
+        t.push(td(234.34, 4, r(5, 4), [
+            P, d, P, P,
+            P, f_s, P, P,
+            P, P, b, P,
+        ]));
+
+        // D7(13) (anchor D)
+        let b = d * b66_nat6_size;
+        let f_s = d * r(5, 4);
+        let c = d * r(7, 4);
+        let e = d * r(9, 8);
+        t.push(td(235.05 , 4, r(5, 4), [
+            P, P, P, e,
+            P, f_s, P, P,
+            P, P, b, c,
+        ]));
+
+        // G-9 (anchor D)
+        let g = d * r(4, 3);
+        let b_b = g * b66_m3_size;
+        let a = g * r(9, 8);
+
+        t.push(td(235.75 , 4, r(5, 4), [
+            P, P, P, P,
+            P, P, g, P,
+            a, b_b, P, P,
+        ]));
+
+        // Bb7(13) (anchor Bb)
+        let a_b = b_b * r(7, 8);
+        let d = b_b * r(5, 8);
+        let f = b_b * r(3, 4);
+        let g = b_b * b66_nat6_size * r(1, 2);
+
+        t.push(td(236.50, 4, r(5, 4), [
+            P, d, P, P,
+            f, P, g, a_b,
+            P, P, P, P
+        ]));
+
+        // Eb-9 (anchor Bb)
+        let e_b = b_b * r(2, 3);
+        let g_b = e_b * b66_m3_size;
+        let f = e_b * r(9, 8);
+
+        // in case of accidental wrong notes
+        let a_b = e_b * r(4, 3);
+        let d_b = g_b * r(3, 4);
+
+        t.push(td(237.31, 4, r(5, 4), [
+            d_b, P, e_b, P,
+            f, g_b, P, a_b,
+            P, P, P, P,
+        ]));
+
+        // F#13sus (anchor A# = Bb) and F#7b9
+        let a_s = b_b;
+        let f_s = a_s * r(4, 5);
+        let e = f_s * r(7, 8);
+        let g_s = f_s * r(9, 8);
+        let d_s = f_s * b66_nat6_size * r(1, 2); // TODO: for melody's sake, should this be 13th harm or 27/16?
+        let g = f_s * r(17, 16); // TODO: is this the correct color for the b9?
+
+        // we need to temper the A# closer toward 11/12 of B so that bar 68 is not jarring.
+        // The original ratio between A# and B is 16/15, but m. 68 fixes 12/11 for A#-B.
+        // med(16/15, 12/11) = 14/13
+        let temp_a_s = b * r(13, 14);
+
+        t.push(td(238.76, 4, r(5, 4), [
+            P, P, d_s, e,
+            P, f_s, g, g_s,
+            P, temp_a_s, P, P,
+        ]));
+
+        // Bar 68: B-6/9
+
+        // Build /6 subminor (anchor F#)
+        let b = f_s * r(4, 3);
+        let c_s = b * r(9, 16);
+        let d = b * r(7, 12);
+        let e = b * r(2, 3);
+        let g_s = b * r(5, 6);
+        let a_s = b * r(12, 13); // goal: A#-B = 12/11, but temper for now.
+
+        t.push(td(240.29, 4, r(5, 4), [
+            c_s, d, P, e,
+            P, P, P, g_s,
+            P, a_s, b, P,
+        ]));
+
+        // Bar 69: B-6/9 (untempered 11th harmonic mapping for nat 7 A#)
+        let a_s = b * r(11, 12);
+
+        t.push(td(242.31, 4, r(5, 4), [
+            P, P, P, P,
+            P, P, P, P,
+            P, a_s, P, P,
+        ]));
+
+        // ------------------------------------------------------------
+        // PAGE 10
+
+        // Bar 72: Am, Cmaj gliss.
+        // Map P4 to 11/8 for shimmer.
+        // The note A should be the resolution for the previous chord, Bm6/9.
+        // The Bm6/9 is identical to E7(13) over B, so the G#->A semitone movement
+        // is the typical cantizans 7-1 resolution we can do in 5-limit.
+
+        /*
+        Et comme je lui repondais que j'aimais une mortelle,
+         */
+
+        let a = g_s * r(16, 15);
+        let c = a * r(6, 5); // this is the root we are building off of.
+        // FYI, after all the ridiculous comma pumps, we are at
+        // C = 109631931154432/58625675076375
+        //   = (2^20 * 37 * 41^4) / (3^6 * 5^3 * 11^2 * 19 * 23^4)
+        // This note is equal to -116.3c below starting C#, so we aren't far off.
+        // println!("C: {c}");
+        let d = c * r(9, 16);
+        let e = c * r(5, 8);
+        let f = c * r(11, 16);
+        let g = c * r(3, 4);
+        let b = c * r(15, 16);
+
+        t.push(td(258.30, 4, r(5, 4), [
+            P, d, P, e,
+            f, P, g, P,
+            a, P, b, c,
+        ]));
 
         Arc::new(Mutex::new(Tuner::new(t)))
     };
