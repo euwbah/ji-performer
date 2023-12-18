@@ -177,7 +177,8 @@ lazy_static! {
         // the otonal stack (previously it was 11/13 of F#)
         let d_s = f_s * r(5, 6);
 
-        t.push(td(39.470, 4, r(5, 4), [
+        // Tune 1 note earlier to prevent the weird 'pitch bend portamenteau'
+        t.push(td(39.340, 4, r(5, 4), [
             P, P, d_s, P,
             e_s, P, P, P,
             P, P, P, P,
@@ -574,7 +575,8 @@ lazy_static! {
         // full C13b9 voicing with an A major triad on top. To bring out the 13b9 texture better,
         // we make C# = 5/4 of A, which pumps it down by 16245/16384 (14.7c)
 
-        t.push(td(77.268, 4, r(5, 4), [
+        // bring tuning two notes ahead to prevent portamenteau
+        t.push(td(77.17, 4, r(5, 4), [
             P, P, P, e,
             e_s, f_s, f_x, P,
             a, a_s, P, c,
@@ -814,15 +816,17 @@ lazy_static! {
         let c_s = g_s * r(2, 3); // 4/3 P4 of G#
         let e_s = g_s * r(5, 6); // 5/3 Maj6
 
-        // Choose isodifference for m3-M3 clash (B-B#)
-        // Since D#-E clash is 13/12, let B-B# be 13/12 as well.
-        let b = b_s * r(12, 13);
+        let b = g_s * r(13, 11);
         // Alternative options for b: 7/6, 6/5, 13/11, 39/66 of G#
+        // (I tried isodifference clash B-B# = D#-E = 13/12, but it's too flat of a m3 to work well)
 
-        t.push(td(100.905, 4, r(5, 4), [
+        // PORT PROBLEM (if b is being used)
+        // The portamenteau for note B can't be helped, so we'll have to shift the pitch bend for B
+        // earlier a bit in post to prevent the weird slide sound.
+        t.push(td(100.89, 4, r(5, 4), [
             c_s, P, d_s, e,
             e_s, f_s, P, g_s,
-            P, a_s, P, b_s,
+            P, a_s, b, b_s,
         ]));
 
         // Bar 33: D#m7b5 (F#m6) anchored by melody D#.

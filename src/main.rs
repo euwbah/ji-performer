@@ -1,10 +1,11 @@
 use broadcaster::BroadcastChannel;
 use futures::executor;
-use midir::{MidiOutput};
+use midir::MidiOutput;
 use midly::live::LiveEvent;
 use midly::num::{u4, u7};
 use midly::{self, MetaMessage, MidiMessage, PitchBend, Smf, TrackEventKind};
 use rational::Rational;
+use spin_sleep::{SpinSleeper, SpinStrategy};
 use std::fs;
 use std::io::stdin;
 use std::process::exit;
@@ -28,7 +29,7 @@ pub const PB_RANGE: u16 = 4;
 ///
 /// Other meta messages (non note/cc) like tempo change, track name, etc. will still be
 /// parsed, but notes will not be played and no waiting will be done until this time is reached.
-const START_FROM: f64 = 35.0;
+const START_FROM: f64 = 0.0;
 
 const MIDI_FILE: &str = "ondine.mid";
 
@@ -37,13 +38,25 @@ const PLAYBACK_SPEED: f64 = 1.0;
 
 const MIDI_PLAYBACK_DEVICE_NAME: &str = "31edo";
 
+/// Turn off when recording video/midi to save CPU.
+const DEBUG_PRINT: bool = false;
+
+/// Turn off when recording MIDI to save CPU.
+const ACTIVATE_VISUALIZER: bool = false;
+
+/// Turn off when recording video to save CPU.
+const ACTIVATE_MIDI: bool = true;
+
 fn main() {
     println!("JI Performer v0.1");
     println!("------------");
 
     // Initialize lazy_statics
     println!("Initialized {} primes", PRIMES.len());
-    println!("Initialized {} tunings", ondine::TUNER.lock().unwrap().len());
+    println!(
+        "Initialized {} tunings",
+        ondine::TUNER.lock().unwrap().len()
+    );
 
     let mut broadcast_channel = start_websocket_server();
 
@@ -71,8 +84,7 @@ fn main() {
     }
 
     let out_port = &midi_out.ports()[midi_idx.unwrap()];
-    let mut midi_conn =
-        midi_out.connect(out_port, "JI Performer").unwrap();
+    let mut midi_conn = midi_out.connect(out_port, "JI Performer").unwrap();
 
     let exit_flag = Arc::new(Mutex::new(false));
 
@@ -106,7 +118,7 @@ fn main() {
             println!("Ticks per quarter note: {}", ppqn);
             ppqn.as_int()
         }
-        midly::Timing::Timecode(_frame_per_second,_subframes) => {
+        midly::Timing::Timecode(_frame_per_second, _subframes) => {
             panic!("Timecode MIDI files are not supported at this time");
         }
     };
@@ -132,13 +144,14 @@ fn main() {
 
     // On windows, these are the default settings for SpinSleeper::default(), which are using.
     //
-    // let spin_sleeper =
-    //     // This crate requests 1ms native accuracy from Windows using timeBeginPeriod/timeEndPeriod,
-    //     // so we can use 1ms native accuracy (1 million nanos).
-    //     SpinSleeper::new(1_000_000)
-    //     // use x86 PAUSE instruction to notify the CPU that we are in a spin loop
-    //     .with_spin_strategy(SpinStrategy::SpinLoopHint);
-    //
+    let spin_sleeper =
+        // This crate requests 1ms native accuracy from Windows using timeBeginPeriod/timeEndPeriod,
+        // which should, by right, have 1ms accuracy. Just to be safe, use 2ms.
+        // reduce cpu % (and accuracy) by reducing the number below to like <= 1e6 or sth.
+        SpinSleeper::new(2_000_000)
+        // use x86 PAUSE instruction to notify the CPU that we are in a spin loop
+        .with_spin_strategy(SpinStrategy::SpinLoopHint);
+
     // No need to make any custom config as the default already works fine.
 
     // before starting to play, send all notes off, reset all controllers, and reset pitch bend.
@@ -206,7 +219,7 @@ fn main() {
             let curr_time = (start_instant.elapsed().as_secs_f64() * PLAYBACK_SPEED) + START_FROM;
             let time_diff = expected_curr_time - curr_time;
             if time_diff > 0f64 {
-                spin_sleep::sleep(Duration::from_secs_f64(time_diff));
+                spin_sleeper.sleep(Duration::from_secs_f64(time_diff));
             } else if time_diff < -0.001f64 {
                 println!("WARN: Falling behind by {:.3} ms", -time_diff * 1000.0);
             }
@@ -214,42 +227,54 @@ fn main() {
 
         // Send new pitch bends if current tuning is to be modified.
         if let Some(tuning_data) = tuning_data {
-
             for pb_raw_msg in &tuning_data.midi_messages {
                 if let Some(pb_raw_msg) = pb_raw_msg {
                     midi_conn.send(pb_raw_msg).unwrap();
                 }
             }
-
-            print!("[{curr_tick:>7}, {expected_curr_time:7.3}s] ");
-            println!(
-                "Tuning:\n
-                A:  ({:.3}c) {}
-                Bb: ({:.3}c) {}
-                B:  ({:.3}c) {}
-                C:  ({:.3}c) {}
-                C#: ({:.3}c) {}
-                D:  ({:.3}c) {}
-                D#: ({:.3}c) {}
-                E:  ({:.3}c) {}
-                F:  ({:.3}c) {}
-                F#: ({:.3}c) {}
-                G:  ({:.3}c) {}
-                G#: ({:.3}c) {}
-                ",
-                curr_tuning[0].cents().unwrap(), curr_tuning[0],
-                curr_tuning[1].cents().unwrap() - 100.0, curr_tuning[1],
-                curr_tuning[2].cents().unwrap() - 200.0, curr_tuning[2],
-                curr_tuning[3].cents().unwrap() - 300.0, curr_tuning[3],
-                curr_tuning[4].cents().unwrap() - 400.0, curr_tuning[4],
-                curr_tuning[5].cents().unwrap() - 500.0, curr_tuning[5],
-                curr_tuning[6].cents().unwrap() - 600.0, curr_tuning[6],
-                curr_tuning[7].cents().unwrap() - 700.0, curr_tuning[7],
-                curr_tuning[8].cents().unwrap() - 800.0, curr_tuning[8],
-                curr_tuning[9].cents().unwrap() - 900.0, curr_tuning[9],
-                curr_tuning[10].cents().unwrap() - 1000.0, curr_tuning[10],
-                curr_tuning[11].cents().unwrap() - 1100.0, curr_tuning[11],
-            );
+            if DEBUG_PRINT {
+                print!("[{curr_tick:>7}, {expected_curr_time:7.3}s] ");
+                println!(
+                    "Tuning:\n
+                    A:  ({:.3}c) {}
+                    Bb: ({:.3}c) {}
+                    B:  ({:.3}c) {}
+                    C:  ({:.3}c) {}
+                    C#: ({:.3}c) {}
+                    D:  ({:.3}c) {}
+                    D#: ({:.3}c) {}
+                    E:  ({:.3}c) {}
+                    F:  ({:.3}c) {}
+                    F#: ({:.3}c) {}
+                    G:  ({:.3}c) {}
+                    G#: ({:.3}c) {}
+                    ",
+                    curr_tuning[0].cents().unwrap(),
+                    curr_tuning[0],
+                    curr_tuning[1].cents().unwrap() - 100.0,
+                    curr_tuning[1],
+                    curr_tuning[2].cents().unwrap() - 200.0,
+                    curr_tuning[2],
+                    curr_tuning[3].cents().unwrap() - 300.0,
+                    curr_tuning[3],
+                    curr_tuning[4].cents().unwrap() - 400.0,
+                    curr_tuning[4],
+                    curr_tuning[5].cents().unwrap() - 500.0,
+                    curr_tuning[5],
+                    curr_tuning[6].cents().unwrap() - 600.0,
+                    curr_tuning[6],
+                    curr_tuning[7].cents().unwrap() - 700.0,
+                    curr_tuning[7],
+                    curr_tuning[8].cents().unwrap() - 800.0,
+                    curr_tuning[8],
+                    curr_tuning[9].cents().unwrap() - 900.0,
+                    curr_tuning[9],
+                    curr_tuning[10].cents().unwrap() - 1000.0,
+                    curr_tuning[10],
+                    curr_tuning[11].cents().unwrap() - 1100.0,
+                    curr_tuning[11],
+                );
+            }
         }
 
         let is_midi_event = matches!(event.kind, TrackEventKind::Midi { .. });
@@ -272,9 +297,7 @@ fn main() {
             TrackEventKind::Meta(MetaMessage::TrackName(text)) => {
                 println!("Track name: {}", std::str::from_utf8(&text).unwrap());
             }
-            TrackEventKind::Midi {
-                channel, message, ..
-            } => {
+            TrackEventKind::Midi { message, .. } => {
                 if start.is_some() {
                     // Only send Note on/off messages if we have reached where we want to start playing.
                     // println!("MIDI Event: Channel: {}, Message: {:?}", channel, message);
@@ -288,7 +311,9 @@ fn main() {
                         let edosteps_from_a4: i32 = key.as_int() as i32 - 69;
                         let channel = edosteps_from_a4.rem_euclid(12) as u8;
 
-                        send_note_on(&mut midi_conn, channel, key, vel);
+                        if ACTIVATE_MIDI {
+                            send_note_on(&mut midi_conn, channel, key, vel);
+                        }
 
                         // 0 is A, 1 is Bb, etc...
                         let semitone_mod12 = (key.as_int() + 3) as usize % 12;
@@ -304,32 +329,50 @@ fn main() {
                             monzo[0] += octaves_from_a4;
                         }
 
-                        print!("[{curr_tick:>7}, {expected_curr_time:7.3}s] ");
-                        let note_name = SEMITONE_NAMES[semitone_mod12];
-                        let octaves = (key.as_int() as i32 / 12) - 1;
-                        println!("Note on: {}{}, vel: {vel}. {:?}", note_name, octaves, monzo);
+                        if DEBUG_PRINT {
+                            print!("[{curr_tick:>7}, {expected_curr_time:7.3}s] ");
+                            let note_name = SEMITONE_NAMES[semitone_mod12];
+                            let octaves = (key.as_int() as i32 / 12) - 1;
+                            println!("Note on: {}{}, vel: {vel}. {:?}", note_name, octaves, monzo);
+                        }
 
-                        let res = executor::block_on(broadcast_channel.send(&VisualizerMessage::NoteOn {
-                            edosteps_from_a4,
-                            velocity: vel,
-                            monzo,
-                        }));
+                        if ACTIVATE_VISUALIZER {
+                            let res = executor::block_on(broadcast_channel.send(
+                                &VisualizerMessage::NoteOn {
+                                    edosteps_from_a4,
+                                    velocity: vel,
+                                    monzo,
+                                },
+                            ));
 
-                        if let Err(e) = res {
-                            println!("WARN: Failed to send message to visualizer broadcast channel: {}", e);
+                            if let Err(e) = res {
+                                println!(
+                                    "WARN: Failed to send message to visualizer broadcast channel: {}",
+                                    e
+                                );
+                            }
                         }
                     } else if let MidiMessage::NoteOff { key, vel } = message {
                         let edosteps_from_a4 = key.as_int() as i32 - 69;
                         let channel = edosteps_from_a4.rem_euclid(12) as u8;
 
-                        send_note_off(&mut midi_conn, channel, key, vel);
+                        if ACTIVATE_MIDI {
+                            send_note_off(&mut midi_conn, channel, key, vel);
+                        }
 
-                        let res = executor::block_on(broadcast_channel.send(&VisualizerMessage::NoteOff {
-                            edosteps_from_a4,
-                            velocity: vel,
-                        }));
-                        if let Err(e) = res {
-                            println!("WARN: Failed to send message to visualizer broadcast channel: {}", e);
+                        if ACTIVATE_VISUALIZER {
+                            let res = executor::block_on(broadcast_channel.send(
+                                &VisualizerMessage::NoteOff {
+                                    edosteps_from_a4,
+                                    velocity: vel,
+                                },
+                            ));
+                            if let Err(e) = res {
+                                println!(
+                                    "WARN: Failed to send message to visualizer broadcast channel: {}",
+                                    e
+                                );
+                            }
                         }
                     }
                 }
@@ -341,10 +384,9 @@ fn main() {
                     // CC messages on to all channels. According to Pianoteq, sending
                     send_cc(&mut midi_conn, 0, controller, value);
 
-                    let res = executor::block_on(broadcast_channel.send(&VisualizerMessage::CC {
-                        controller,
-                        value,
-                    }));
+                    let res = executor::block_on(
+                        broadcast_channel.send(&VisualizerMessage::CC { controller, value }),
+                    );
                     if let Err(e) = res {
                         println!("WARN: Failed to send message to vis1ualizer: {}", e);
                     }
@@ -356,7 +398,6 @@ fn main() {
             }
         }
     }
-
 
     println!("Reset & closing connection...");
     reset(&mut midi_conn, &mut broadcast_channel);
@@ -384,11 +425,13 @@ fn reset(
     executor::block_on(broadcast_channel.send(&VisualizerMessage::CC {
         controller: 121.into(),
         value: 0.into(),
-    })).unwrap();
+    }))
+    .unwrap();
     executor::block_on(broadcast_channel.send(&VisualizerMessage::CC {
         controller: 123.into(),
         value: 0.into(),
-    })).unwrap();
+    }))
+    .unwrap();
 }
 
 fn send_pitch_bend<T: Into<u4>>(
