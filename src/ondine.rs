@@ -2329,21 +2329,83 @@ lazy_static! {
         // Bar 83: Dm6
 
         // Is using the very flat double septimal minor D a good idea?
-        // FUTURE NOTE: no it is not.
+        // > FUTURE NOTE: no it is not.
 
         // Instead, use B as the anchor, and D is 3/5 of B.
+
         let d = b * r(3, 5);
         let f = d * r(7, 6); // same tuning as E previously
         let a = d * r(3, 2);
         let c_s = d * r(11, 12);
 
-        // for the accented G#, use the same tuning as the in bar 80.
+        // for the accented G#, use the same tuning as the in bar 80
+        // G#-A = 21/20 = 84.5c
+        // println!("G#-A interval: {}", a / g_s);
 
         t.push(td(314.4, 4, r(5, 4), [
             c_s, d, P, P,
             f, P, P, P,
             a, P, P, P,
         ]));
+
+        // -----------------------------------------------------------
+        // PAGE 12
+
+        // Bar 88: Eb13b9, Db13b9 (rootless), Bb13b9 (rootless), G#13b9 (rootless)
+
+        /*
+        poussa un eclat de rire, ...
+         */
+
+        // Reset all comma pumps, the 'maniac laugh' need not be connected in pitch.
+        // Aim for as many 7, 11, and 13-limit relations as possible (key characters of the mystical).
+        // 7 - Ondine
+        // 11 - Rust, rouge
+        // 13 - Turbulence, waves, biting scenery, drying machinery.
+
+        // C#, E#, G#, A must match the ending (and starting) theme of 8:10:12:13.
+
+        // Eb is the current chord root.
+        // Start by tuning the 'laugh' exactly the same as the more functional ending of the laugh
+        // (end of m. 88, with the 4 times repeating G# F# C# D# melody that resolves to the
+        // melody E# over C#(!13))
+
+        let e_b = r(9, 8); // functionally 2 of the new root C# = 1/1 (back to starting tuning)
+        let c_s = r(1, 1); // FIXED simple 3-lim relation with current chord root, to preserve key for later.
+        let f_s = e_b * r(7, 6); // 7th harm of G# (dominant)
+        let c = e_b * r(13, 8); // 13th harm of D#
+        let e = c * r(5, 8); // C-E form 5-lim third
+        let g = c * r(3, 4); // C-G form 3-lim P5 (Eb-G discordant)
+
+        // For Db13b9 (rootless), target 7/6 for Cb-Ebb (B-D)
+        // use 1/1 C# = Db as chord root, B is 7th harmonic of fundamental C#.
+        let f = c_s * r(5, 4); // FIXED
+        let b_b = f * r(4, 3); // F-Bb is a 3-limit P4
+        let b = c_s * r(7, 4);
+        let d = b * r(7, 12); // B-D = 7/6
+
+        // For Bb13b9, target Ab = 3/2 of C#
+        let a_b = c_s * r(3, 2); // FIXED
+
+        // For G#13b9, target A = 13/8 of C#
+        let a = c_s * r(13, 8); // FIXED
+
+        t.push(td(346.1, 4, r(5, 4), [
+            c_s, d, e_b, e,
+            f, f_s, g, a_b,
+            a, b_b, b, c,
+        ]));
+
+        // Bar 88, line 2, last 2 beats (written in cue size)
+
+        // avoid 21/16 P4 between F# and C# for G# F# C# D# melody
+        let f_s = c_s * r(4, 3);
+        t.push(td(355.81, 4, r(5, 4), [
+            P, P, P, P,
+            P, f_s, P, P,
+            P, P, P, P,
+        ]));
+
 
         Arc::new(Mutex::new(Tuner::new(t)))
     };
