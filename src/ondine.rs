@@ -177,7 +177,7 @@ lazy_static! {
         // the otonal stack (previously it was 11/13 of F#)
         let d_s = f_s * r(5, 6);
 
-        t.push(td(39.480, 4, r(5, 4), [
+        t.push(td(39.470, 4, r(5, 4), [
             P, P, d_s, P,
             e_s, P, P, P,
             P, P, P, P,
