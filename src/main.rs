@@ -42,10 +42,10 @@ const MIDI_PLAYBACK_DEVICE_NAME: &str = "31edo";
 const DEBUG_PRINT: bool = false;
 
 /// Turn off when recording MIDI to save CPU.
-const ACTIVATE_VISUALIZER: bool = false;
+const ACTIVATE_VISUALIZER: bool = true;
 
 /// Turn off when recording video to save CPU.
-const ACTIVATE_MIDI: bool = true;
+const ACTIVATE_MIDI: bool = false;
 
 fn main() {
     println!("JI Performer v0.1");
@@ -148,7 +148,7 @@ fn main() {
         // This crate requests 1ms native accuracy from Windows using timeBeginPeriod/timeEndPeriod,
         // which should, by right, have 1ms accuracy. Just to be safe, use 2ms.
         // reduce cpu % (and accuracy) by reducing the number below to like <= 1e6 or sth.
-        SpinSleeper::new(2_000_000)
+        SpinSleeper::new(1_000_000)
         // use x86 PAUSE instruction to notify the CPU that we are in a spin loop
         .with_spin_strategy(SpinStrategy::SpinLoopHint);
 
