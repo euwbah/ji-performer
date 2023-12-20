@@ -379,6 +379,43 @@ impl Tuner {
     pub fn len(&self) -> usize {
         self.tunings.len()
     }
+
+    /// Prints the tunings as semicolon separated values "CSV"
+    ///
+    /// Copy and paste & import into some spreadsheet softwares and use ; as delimiter.
+    pub fn print_csv(&self) {
+        println!("time;A;Bb;B;C;C#;D;D#;E;F;F#;G;G#;A pf;Bb pf;B pf;C pf;C# pf;D pf;D# pf;E pf;F pf;F# pf;G pf;G# pf");
+        for t in &self.tunings {
+            println!(
+                "{};{};{};{};{};{};{};{};{};{};{};{};{};{:?};{:?};{:?};{:?};{:?};{:?};{:?};{:?};{:?};{:?};{:?};{:?}",
+                t.time,
+                t.tuning[0],
+                t.tuning[1],
+                t.tuning[2],
+                t.tuning[3],
+                t.tuning[4],
+                t.tuning[5],
+                t.tuning[6],
+                t.tuning[7],
+                t.tuning[8],
+                t.tuning[9],
+                t.tuning[10],
+                t.tuning[11],
+                t.tuning[0].monzo(),
+                t.tuning[1].monzo(),
+                t.tuning[2].monzo(),
+                t.tuning[3].monzo(),
+                t.tuning[4].monzo(),
+                t.tuning[5].monzo(),
+                t.tuning[6].monzo(),
+                t.tuning[7].monzo(),
+                t.tuning[8].monzo(),
+                t.tuning[9].monzo(),
+                t.tuning[10].monzo(),
+                t.tuning[11].monzo(),
+            );
+        }
+    }
 }
 
 impl Index<usize> for Tuner {

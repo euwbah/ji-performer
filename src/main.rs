@@ -45,7 +45,7 @@ const DEBUG_PRINT: bool = false;
 const ACTIVATE_VISUALIZER: bool = true;
 
 /// Turn off when recording video to save CPU.
-const ACTIVATE_MIDI: bool = false;
+const ACTIVATE_MIDI: bool = true;
 
 fn main() {
     println!("JI Performer v0.1");
@@ -54,9 +54,10 @@ fn main() {
     // Initialize lazy_statics
     println!("Initialized {} primes", PRIMES.len());
     println!(
-        "Initialized {} tunings",
+        "Initialized {} tunings:",
         ondine::TUNER.lock().unwrap().len()
     );
+    ondine::TUNER.lock().unwrap().print_csv();
 
     let mut broadcast_channel = start_websocket_server();
 
