@@ -4,6 +4,10 @@ Convert 12 edo MIDI files into JI-tuned realtime MPE output + visualization (sen
 
 This works by playing back a MIDI file (in real-time) by putting each of the 12 semitones on a separate MIDI channel (A &rarr; 1, Bb &rarr; 2, etc...), and sending channel pitch bend messages to each channel. For compatibility's sake, since I can't think of any existing DAWs that can "import" a file with MIDI messages in the MPE format, so the MPE-like playback is to be recorded in real-time by a DAW.
 
+## Demo
+
+- [(Youtube) Ondine (Gaspard de la nuit) --- M. Ravel](https://youtu.be/Ck33YZt5Mf0)
+
 ### Usage
 
 - Set up a virtual MIDI port (https://help.ableton.com/hc/en-us/articles/209774225-Setting-up-a-virtual-MIDI-bus)
